@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&TrustedAccessRoleBindingId{})
+}
 
 var _ resourceids.ResourceId = &TrustedAccessRoleBindingId{}
 
@@ -39,7 +44,7 @@ func ParseTrustedAccessRoleBindingID(input string) (*TrustedAccessRoleBindingId,
 	}
 
 	id := TrustedAccessRoleBindingId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -56,7 +61,7 @@ func ParseTrustedAccessRoleBindingIDInsensitively(input string) (*TrustedAccessR
 	}
 
 	id := TrustedAccessRoleBindingId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -116,9 +121,9 @@ func (id TrustedAccessRoleBindingId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftContainerService", "Microsoft.ContainerService", "Microsoft.ContainerService"),
 		resourceids.StaticSegment("staticManagedClusters", "managedClusters", "managedClusters"),
-		resourceids.UserSpecifiedSegment("managedClusterName", "managedClusterValue"),
+		resourceids.UserSpecifiedSegment("managedClusterName", "managedClusterName"),
 		resourceids.StaticSegment("staticTrustedAccessRoleBindings", "trustedAccessRoleBindings", "trustedAccessRoleBindings"),
-		resourceids.UserSpecifiedSegment("trustedAccessRoleBindingName", "trustedAccessRoleBindingValue"),
+		resourceids.UserSpecifiedSegment("trustedAccessRoleBindingName", "trustedAccessRoleBindingName"),
 	}
 }
 

@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&ViewId{})
+}
 
 var _ resourceids.ResourceId = &ViewId{}
 
@@ -33,7 +38,7 @@ func ParseViewID(input string) (*ViewId, error) {
 	}
 
 	id := ViewId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -50,7 +55,7 @@ func ParseViewIDInsensitively(input string) (*ViewId, error) {
 	}
 
 	id := ViewId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +99,7 @@ func (id ViewId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftCostManagement", "Microsoft.CostManagement", "Microsoft.CostManagement"),
 		resourceids.StaticSegment("staticViews", "views", "views"),
-		resourceids.UserSpecifiedSegment("viewName", "viewValue"),
+		resourceids.UserSpecifiedSegment("viewName", "viewName"),
 	}
 }
 

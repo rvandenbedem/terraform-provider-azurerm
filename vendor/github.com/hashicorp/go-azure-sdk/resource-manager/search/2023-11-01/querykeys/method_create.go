@@ -36,6 +36,7 @@ func (o CreateOperationOptions) ToHeaders() *client.Headers {
 
 func (o CreateOperationOptions) ToOData() *odata.Query {
 	out := odata.Query{}
+
 	return &out
 }
 
@@ -53,8 +54,8 @@ func (c QueryKeysClient) Create(ctx context.Context, id CreateQueryKeyId, option
 			http.StatusOK,
 		},
 		HttpMethod:    http.MethodPost,
-		Path:          id.ID(),
 		OptionsObject: options,
+		Path:          id.ID(),
 	}
 
 	req, err := c.Client.NewRequest(ctx, opts)
@@ -74,7 +75,6 @@ func (c QueryKeysClient) Create(ctx context.Context, id CreateQueryKeyId, option
 
 	var model QueryKey
 	result.Model = &model
-
 	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}

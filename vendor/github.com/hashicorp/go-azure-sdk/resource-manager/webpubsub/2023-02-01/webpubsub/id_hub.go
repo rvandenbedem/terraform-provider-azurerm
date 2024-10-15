@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&HubId{})
+}
 
 var _ resourceids.ResourceId = &HubId{}
 
@@ -39,7 +44,7 @@ func ParseHubID(input string) (*HubId, error) {
 	}
 
 	id := HubId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -56,7 +61,7 @@ func ParseHubIDInsensitively(input string) (*HubId, error) {
 	}
 
 	id := HubId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -116,9 +121,9 @@ func (id HubId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftSignalRService", "Microsoft.SignalRService", "Microsoft.SignalRService"),
 		resourceids.StaticSegment("staticWebPubSub", "webPubSub", "webPubSub"),
-		resourceids.UserSpecifiedSegment("webPubSubName", "webPubSubValue"),
+		resourceids.UserSpecifiedSegment("webPubSubName", "webPubSubName"),
 		resourceids.StaticSegment("staticHubs", "hubs", "hubs"),
-		resourceids.UserSpecifiedSegment("hubName", "hubValue"),
+		resourceids.UserSpecifiedSegment("hubName", "hubName"),
 	}
 }
 

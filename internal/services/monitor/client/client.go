@@ -6,25 +6,24 @@ package client
 import (
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/alertsmanagement/mgmt/2019-06-01-preview/alertsmanagement" // nolint: staticcheck
+	"github.com/hashicorp/go-azure-sdk/resource-manager/alertsmanagement/2019-06-01/smartdetectoralertrules"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/alertsmanagement/2021-08-08/alertprocessingrules"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/alertsmanagement/2023-03-01/prometheusrulegroups"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/azureactivedirectory/2017-04-01/diagnosticsettings"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2015-04-01/activitylogs"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2016-03-01/logprofiles"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2018-03-01/metricalerts"
 	scheduledqueryrules2018 "github.com/hashicorp/go-azure-sdk/resource-manager/insights/2018-04-16/scheduledqueryrules"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2019-10-17-preview/privatelinkscopedresources"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2019-10-17-preview/privatelinkscopesapis"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2020-10-01/activitylogalertsapis"
 	diagnosticSettingClient "github.com/hashicorp/go-azure-sdk/resource-manager/insights/2021-05-01-preview/diagnosticsettings"
 	diagnosticCategoryClient "github.com/hashicorp/go-azure-sdk/resource-manager/insights/2021-05-01-preview/diagnosticsettingscategories"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2021-08-01/scheduledqueryrules"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2021-07-01-preview/privatelinkscopesapis"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2022-06-01/datacollectionendpoints"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2022-06-01/datacollectionruleassociations"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2022-06-01/datacollectionrules"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2022-10-01/autoscalesettings"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2023-01-01/actiongroupsapis"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2023-03-15-preview/scheduledqueryrules"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/insights/2023-04-03/azuremonitorworkspaces"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/common"
 )
@@ -37,9 +36,8 @@ type Client struct {
 	AutoscaleSettingsClient *autoscalesettings.AutoScaleSettingsClient
 
 	// alerts management
-	ActionRulesClient             *alertsmanagement.ActionRulesClient
 	AlertProcessingRulesClient    *alertprocessingrules.AlertProcessingRulesClient
-	SmartDetectorAlertRulesClient *alertsmanagement.SmartDetectorAlertRulesClient
+	SmartDetectorAlertRulesClient *smartdetectoralertrules.SmartDetectorAlertRulesClient
 
 	// Monitor
 	ActionGroupsClient                   *actiongroupsapis.ActionGroupsAPIsClient
@@ -51,7 +49,6 @@ type Client struct {
 	DataCollectionRulesClient            *datacollectionrules.DataCollectionRulesClient
 	DiagnosticSettingsClient             *diagnosticSettingClient.DiagnosticSettingsClient
 	DiagnosticSettingsCategoryClient     *diagnosticCategoryClient.DiagnosticSettingsCategoriesClient
-	LogProfilesClient                    *logprofiles.LogProfilesClient
 	MetricAlertsClient                   *metricalerts.MetricAlertsClient
 	PrivateLinkScopesClient              *privatelinkscopesapis.PrivateLinkScopesAPIsClient
 	PrivateLinkScopedResourcesClient     *privatelinkscopedresources.PrivateLinkScopedResourcesClient
@@ -73,17 +70,17 @@ func NewClient(o *common.ClientOptions) (*Client, error) {
 	}
 	o.Configure(AutoscaleSettingsClient.Client, o.Authorizers.ResourceManager)
 
-	ActionRulesClient := alertsmanagement.NewActionRulesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
-	o.ConfigureClient(&ActionRulesClient.Client, o.ResourceManagerAuthorizer)
-
 	alertProcessingRulesClient, err := alertprocessingrules.NewAlertProcessingRulesClientWithBaseURI(o.Environment.ResourceManager)
 	if err != nil {
 		return nil, fmt.Errorf("building AlertProcessingRules client: %+v", err)
 	}
 	o.Configure(alertProcessingRulesClient.Client, o.Authorizers.ResourceManager)
 
-	SmartDetectorAlertRulesClient := alertsmanagement.NewSmartDetectorAlertRulesClientWithBaseURI(o.ResourceManagerEndpoint, o.SubscriptionId)
-	o.ConfigureClient(&SmartDetectorAlertRulesClient.Client, o.ResourceManagerAuthorizer)
+	SmartDetectorAlertRulesClient, err := smartdetectoralertrules.NewSmartDetectorAlertRulesClientWithBaseURI(o.Environment.ResourceManager)
+	if err != nil {
+		return nil, fmt.Errorf("building Smart Detector Alert Rules client: %+v", err)
+	}
+	o.Configure(SmartDetectorAlertRulesClient.Client, o.Authorizers.ResourceManager)
 
 	ActionGroupsClient, err := actiongroupsapis.NewActionGroupsAPIsClientWithBaseURI(o.Environment.ResourceManager)
 	if err != nil {
@@ -139,12 +136,6 @@ func NewClient(o *common.ClientOptions) (*Client, error) {
 	}
 	o.Configure(DiagnosticSettingsCategoryClient.Client, o.Authorizers.ResourceManager)
 
-	LogProfilesClient, err := logprofiles.NewLogProfilesClientWithBaseURI(o.Environment.ResourceManager)
-	if err != nil {
-		return nil, fmt.Errorf("building Log Profiles client: %+v", err)
-	}
-	o.Configure(LogProfilesClient.Client, o.Authorizers.ResourceManager)
-
 	MetricAlertsClient, err := metricalerts.NewMetricAlertsClientWithBaseURI(o.Environment.ResourceManager)
 	if err != nil {
 		return nil, fmt.Errorf("building Metric Alerts client: %+v", err)
@@ -184,8 +175,7 @@ func NewClient(o *common.ClientOptions) (*Client, error) {
 	return &Client{
 		AADDiagnosticSettingsClient:          aadDiagnosticSettingsClient,
 		AutoscaleSettingsClient:              AutoscaleSettingsClient,
-		ActionRulesClient:                    &ActionRulesClient,
-		SmartDetectorAlertRulesClient:        &SmartDetectorAlertRulesClient,
+		SmartDetectorAlertRulesClient:        SmartDetectorAlertRulesClient,
 		ActionGroupsClient:                   ActionGroupsClient,
 		ActivityLogsClient:                   activityLogsClient,
 		ActivityLogAlertsClient:              ActivityLogAlertsClient,
@@ -196,7 +186,6 @@ func NewClient(o *common.ClientOptions) (*Client, error) {
 		DataCollectionRulesClient:            DataCollectionRulesClient,
 		DiagnosticSettingsClient:             DiagnosticSettingsClient,
 		DiagnosticSettingsCategoryClient:     DiagnosticSettingsCategoryClient,
-		LogProfilesClient:                    LogProfilesClient,
 		MetricAlertsClient:                   MetricAlertsClient,
 		PrivateLinkScopesClient:              PrivateLinkScopesClient,
 		PrivateLinkScopedResourcesClient:     PrivateLinkScopedResourcesClient,

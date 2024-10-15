@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&PoolId{})
+}
 
 var _ resourceids.ResourceId = &PoolId{}
 
@@ -39,7 +44,7 @@ func ParsePoolID(input string) (*PoolId, error) {
 	}
 
 	id := PoolId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -56,7 +61,7 @@ func ParsePoolIDInsensitively(input string) (*PoolId, error) {
 	}
 
 	id := PoolId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -116,9 +121,9 @@ func (id PoolId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftDevCenter", "Microsoft.DevCenter", "Microsoft.DevCenter"),
 		resourceids.StaticSegment("staticProjects", "projects", "projects"),
-		resourceids.UserSpecifiedSegment("projectName", "projectValue"),
+		resourceids.UserSpecifiedSegment("projectName", "projectName"),
 		resourceids.StaticSegment("staticPools", "pools", "pools"),
-		resourceids.UserSpecifiedSegment("poolName", "poolValue"),
+		resourceids.UserSpecifiedSegment("poolName", "poolName"),
 	}
 }
 

@@ -17,14 +17,14 @@ import (
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/edgezones"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2021-11-01/virtualmachines"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2022-03-01/capacityreservationgroups"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2022-03-01/proximityplacementgroups"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2023-04-02/disks"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicessiterecovery/2022-10-01/replicationfabrics"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicessiterecovery/2022-10-01/replicationpolicies"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicessiterecovery/2022-10-01/replicationprotecteditems"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicessiterecovery/2022-10-01/replicationprotectioncontainers"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/compute/2024-03-01/virtualmachines"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicessiterecovery/2024-04-01/replicationfabrics"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicessiterecovery/2024-04-01/replicationpolicies"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicessiterecovery/2024-04-01/replicationprotecteditems"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/recoveryservicessiterecovery/2024-04-01/replicationprotectioncontainers"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -156,8 +156,9 @@ func resourceSiteRecoveryReplicatedVM() *pluginsdk.Resource {
 
 			"unmanaged_disk": {
 				Type:       pluginsdk.TypeSet,
-				ConfigMode: pluginsdk.SchemaConfigModeAttr,
 				Optional:   true,
+				Computed:   true,
+				ConfigMode: pluginsdk.SchemaConfigModeAttr,
 				ForceNew:   true,
 				Elem: &pluginsdk.Resource{
 					Schema: map[string]*pluginsdk.Schema{
@@ -193,8 +194,9 @@ func resourceSiteRecoveryReplicatedVM() *pluginsdk.Resource {
 
 			"managed_disk": {
 				Type:       pluginsdk.TypeSet,
-				ConfigMode: pluginsdk.SchemaConfigModeAttr,
 				Optional:   true,
+				Computed:   true,
+				ConfigMode: pluginsdk.SchemaConfigModeAttr,
 				ForceNew:   true,
 				Set:        resourceSiteRecoveryReplicatedVMDiskHash,
 				Elem: &pluginsdk.Resource{
@@ -253,8 +255,8 @@ func resourceSiteRecoveryReplicatedVM() *pluginsdk.Resource {
 
 						"target_disk_encryption": {
 							Type:       pluginsdk.TypeList,
-							ConfigMode: pluginsdk.SchemaConfigModeAttr,
 							Optional:   true,
+							ConfigMode: pluginsdk.SchemaConfigModeAttr,
 							MaxItems:   1,
 							Elem:       diskEncryptionResource(),
 						},
@@ -286,11 +288,19 @@ func resourceSiteRecoveryReplicatedVM() *pluginsdk.Resource {
 				ValidateFunc: commonids.ValidateVirtualMachineScaleSetID,
 			},
 
+			"target_virtual_machine_size": {
+				Type:     pluginsdk.TypeString,
+				Optional: true,
+				// O+C if not specified, this gets set to the vm_size of the virtual machine
+				Computed:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
+			},
+
 			"network_interface": {
 				Type:       pluginsdk.TypeSet, // use set to avoid diff caused by different orders.
-				ConfigMode: pluginsdk.SchemaConfigModeAttr,
-				Computed:   true,
 				Optional:   true,
+				Computed:   true,
+				ConfigMode: pluginsdk.SchemaConfigModeAttr,
 				Elem:       networkInterfaceResource(),
 			},
 		},
@@ -370,9 +380,9 @@ func diskEncryptionResource() *pluginsdk.Resource {
 		Schema: map[string]*pluginsdk.Schema{
 			"disk_encryption_key": {
 				Type:       pluginsdk.TypeList,
-				ConfigMode: pluginsdk.SchemaConfigModeAttr,
 				Required:   true,
 				MaxItems:   1,
+				ConfigMode: pluginsdk.SchemaConfigModeAttr,
 				Elem: &pluginsdk.Resource{
 					Schema: map[string]*pluginsdk.Schema{
 						"secret_url": {
@@ -389,9 +399,9 @@ func diskEncryptionResource() *pluginsdk.Resource {
 
 			"key_encryption_key": {
 				Type:       pluginsdk.TypeList,
-				ConfigMode: pluginsdk.SchemaConfigModeAttr,
 				Optional:   true,
 				MaxItems:   1,
+				ConfigMode: pluginsdk.SchemaConfigModeAttr,
 				Elem: &pluginsdk.Resource{
 					Schema: map[string]*pluginsdk.Schema{
 						"key_url": {
@@ -636,12 +646,13 @@ func resourceSiteRecoveryReplicatedItemUpdateInternal(ctx context.Context, d *pl
 			SelectedTfoAzureNetworkId:      &testNetworkId,
 			VMNics:                         &vmNics,
 			RecoveryAvailabilitySetId:      targetAvailabilitySetID,
+			RecoveryAzureVMSize:            pointer.To(d.Get("target_virtual_machine_size").(string)),
 			ProviderSpecificDetails: replicationprotecteditems.A2AUpdateReplicationProtectedItemInput{
 				ManagedDiskUpdateDetails:           &managedDisks,
-				RecoveryProximityPlacementGroupId:  utils.String(d.Get("target_proximity_placement_group_id").(string)),
-				RecoveryBootDiagStorageAccountId:   utils.String(d.Get("target_boot_diagnostic_storage_account_id").(string)),
-				RecoveryCapacityReservationGroupId: utils.String(d.Get("target_capacity_reservation_group_id").(string)),
-				RecoveryVirtualMachineScaleSetId:   utils.String(d.Get("target_virtual_machine_scale_set_id").(string)),
+				RecoveryProximityPlacementGroupId:  pointer.To(d.Get("target_proximity_placement_group_id").(string)),
+				RecoveryBootDiagStorageAccountId:   pointer.To(d.Get("target_boot_diagnostic_storage_account_id").(string)),
+				RecoveryCapacityReservationGroupId: pointer.To(d.Get("target_capacity_reservation_group_id").(string)),
+				RecoveryVirtualMachineScaleSetId:   pointer.To(d.Get("target_virtual_machine_scale_set_id").(string)),
 			},
 		},
 	}
@@ -820,6 +831,7 @@ func resourceSiteRecoveryReplicatedItemRead(d *pluginsdk.ResourceData, meta inte
 			}
 			d.Set("target_virtual_machine_scale_set_id", vmssId)
 
+			d.Set("target_virtual_machine_size", pointer.From(a2aDetails.RecoveryAzureVMSize))
 			d.Set("target_zone", a2aDetails.RecoveryAvailabilityZone)
 			d.Set("target_edge_zone", flattenEdgeZone(a2aDetails.RecoveryExtendedLocation))
 			d.Set("multi_vm_group_name", a2aDetails.MultiVMGroupName)
@@ -951,8 +963,8 @@ func resourceSiteRecoveryReplicatedItemDelete(d *pluginsdk.ResourceData, meta in
 		Properties: replicationprotecteditems.DisableProtectionInputProperties{
 			DisableProtectionReason: &disableProtectionReason,
 			// It's a workaround for https://github.com/hashicorp/pandora/issues/1864
-			ReplicationProviderInput: &siterecovery.DisableProtectionProviderSpecificInput{
-				InstanceType: siterecovery.InstanceTypeDisableProtectionProviderSpecificInput,
+			ReplicationProviderInput: replicationprotecteditems.BaseDisableProtectionProviderSpecificInputImpl{
+				InstanceType: string(siterecovery.InstanceTypeDisableProtectionProviderSpecificInput),
 			},
 		},
 	}

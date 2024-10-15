@@ -12,8 +12,8 @@ import (
 	"github.com/hashicorp/go-azure-helpers/lang/response"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/machinelearningservices/2023-10-01/datastore"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/machinelearningservices/2023-10-01/workspaces"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/machinelearningservices/2024-04-01/datastore"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/machinelearningservices/2024-04-01/workspaces"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
@@ -172,22 +172,18 @@ func (r MachineLearningDataStoreBlobStorage) Create() sdk.ResourceFunc {
 
 			accountKey := model.AccountKey
 			if accountKey != "" {
-				props.Credentials = map[string]interface{}{
-					"credentialsType": string(datastore.CredentialsTypeAccountKey),
-					"secrets": map[string]interface{}{
-						"secretsType": "AccountKey",
-						"key":         accountKey,
+				props.Credentials = datastore.AccountKeyDatastoreCredentials{
+					Secrets: datastore.AccountKeyDatastoreSecrets{
+						Key: pointer.To(accountKey),
 					},
 				}
 			}
 
 			sasToken := model.SharedAccessSignature
 			if sasToken != "" {
-				props.Credentials = map[string]interface{}{
-					"credentialsType": string(datastore.CredentialsTypeSas),
-					"secrets": map[string]interface{}{
-						"secretsType": "Sas",
-						"sasToken":    sasToken,
+				props.Credentials = datastore.SasDatastoreCredentials{
+					Secrets: datastore.SasDatastoreSecrets{
+						SasToken: pointer.To(sasToken),
 					},
 				}
 			}
@@ -241,22 +237,18 @@ func (r MachineLearningDataStoreBlobStorage) Update() sdk.ResourceFunc {
 
 			accountKey := state.AccountKey
 			if accountKey != "" {
-				props.Credentials = map[string]interface{}{
-					"credentialsType": string(datastore.CredentialsTypeAccountKey),
-					"secrets": map[string]interface{}{
-						"secretsType": "AccountKey",
-						"key":         accountKey,
+				props.Credentials = datastore.AccountKeyDatastoreCredentials{
+					Secrets: datastore.AccountKeyDatastoreSecrets{
+						Key: pointer.To(accountKey),
 					},
 				}
 			}
 
 			sasToken := state.SharedAccessSignature
 			if sasToken != "" {
-				props.Credentials = map[string]interface{}{
-					"credentialsType": string(datastore.CredentialsTypeSas),
-					"secrets": map[string]interface{}{
-						"secretsType": "Sas",
-						"sasToken":    sasToken,
+				props.Credentials = datastore.SasDatastoreCredentials{
+					Secrets: datastore.SasDatastoreSecrets{
+						SasToken: pointer.To(sasToken),
 					},
 				}
 			}
@@ -306,14 +298,14 @@ func (r MachineLearningDataStoreBlobStorage) Read() sdk.ResourceFunc {
 			}
 			model.ServiceDataAuthIdentity = serviceDataAuth
 
-			storageAccount, err := storageClient.FindAccount(ctx, *data.AccountName)
+			storageAccount, err := storageClient.FindAccount(ctx, subscriptionId, *data.AccountName)
 			if err != nil {
 				return fmt.Errorf("retrieving Account %q for Container %q: %s", *data.AccountName, *data.ContainerName, err)
 			}
 			if storageAccount == nil {
 				return fmt.Errorf("Unable to locate Storage Account %q!", *data.AccountName)
 			}
-			containerId := commonids.NewStorageContainerID(subscriptionId, storageAccount.ResourceGroup, *data.AccountName, *data.ContainerName)
+			containerId := commonids.NewStorageContainerID(storageAccount.StorageAccountId.SubscriptionId, storageAccount.StorageAccountId.ResourceGroupName, *data.AccountName, *data.ContainerName)
 			model.StorageContainerID = containerId.ID()
 
 			model.IsDefault = *data.IsDefault

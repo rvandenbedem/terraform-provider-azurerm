@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&RedisEnterpriseId{})
+}
 
 var _ resourceids.ResourceId = &RedisEnterpriseId{}
 
@@ -37,7 +42,7 @@ func ParseRedisEnterpriseID(input string) (*RedisEnterpriseId, error) {
 	}
 
 	id := RedisEnterpriseId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +59,7 @@ func ParseRedisEnterpriseIDInsensitively(input string) (*RedisEnterpriseId, erro
 	}
 
 	id := RedisEnterpriseId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -110,7 +115,7 @@ func (id RedisEnterpriseId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftCache", "Microsoft.Cache", "Microsoft.Cache"),
 		resourceids.StaticSegment("staticRedisEnterprise", "redisEnterprise", "redisEnterprise"),
-		resourceids.UserSpecifiedSegment("redisEnterpriseName", "redisEnterpriseValue"),
+		resourceids.UserSpecifiedSegment("redisEnterpriseName", "redisEnterpriseName"),
 	}
 }
 

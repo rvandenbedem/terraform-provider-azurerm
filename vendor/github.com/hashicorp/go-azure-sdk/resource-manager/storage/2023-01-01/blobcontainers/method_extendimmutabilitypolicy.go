@@ -37,6 +37,7 @@ func (o ExtendImmutabilityPolicyOperationOptions) ToHeaders() *client.Headers {
 
 func (o ExtendImmutabilityPolicyOperationOptions) ToOData() *odata.Query {
 	out := odata.Query{}
+
 	return &out
 }
 
@@ -54,8 +55,8 @@ func (c BlobContainersClient) ExtendImmutabilityPolicy(ctx context.Context, id c
 			http.StatusOK,
 		},
 		HttpMethod:    http.MethodPost,
-		Path:          fmt.Sprintf("%s/immutabilityPolicies/default/extend", id.ID()),
 		OptionsObject: options,
+		Path:          fmt.Sprintf("%s/immutabilityPolicies/default/extend", id.ID()),
 	}
 
 	req, err := c.Client.NewRequest(ctx, opts)
@@ -79,7 +80,6 @@ func (c BlobContainersClient) ExtendImmutabilityPolicy(ctx context.Context, id c
 
 	var model ImmutabilityPolicy
 	result.Model = &model
-
 	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}

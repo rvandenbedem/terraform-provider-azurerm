@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&AttachedDatabaseConfigurationId{})
+}
 
 var _ resourceids.ResourceId = &AttachedDatabaseConfigurationId{}
 
@@ -39,7 +44,7 @@ func ParseAttachedDatabaseConfigurationID(input string) (*AttachedDatabaseConfig
 	}
 
 	id := AttachedDatabaseConfigurationId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -56,7 +61,7 @@ func ParseAttachedDatabaseConfigurationIDInsensitively(input string) (*AttachedD
 	}
 
 	id := AttachedDatabaseConfigurationId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -116,9 +121,9 @@ func (id AttachedDatabaseConfigurationId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftKusto", "Microsoft.Kusto", "Microsoft.Kusto"),
 		resourceids.StaticSegment("staticClusters", "clusters", "clusters"),
-		resourceids.UserSpecifiedSegment("clusterName", "clusterValue"),
+		resourceids.UserSpecifiedSegment("clusterName", "clusterName"),
 		resourceids.StaticSegment("staticAttachedDatabaseConfigurations", "attachedDatabaseConfigurations", "attachedDatabaseConfigurations"),
-		resourceids.UserSpecifiedSegment("attachedDatabaseConfigurationName", "attachedDatabaseConfigurationValue"),
+		resourceids.UserSpecifiedSegment("attachedDatabaseConfigurationName", "attachedDatabaseConfigurationName"),
 	}
 }
 

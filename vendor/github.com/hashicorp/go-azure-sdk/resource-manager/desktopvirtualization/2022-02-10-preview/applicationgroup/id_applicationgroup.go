@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&ApplicationGroupId{})
+}
 
 var _ resourceids.ResourceId = &ApplicationGroupId{}
 
@@ -37,7 +42,7 @@ func ParseApplicationGroupID(input string) (*ApplicationGroupId, error) {
 	}
 
 	id := ApplicationGroupId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +59,7 @@ func ParseApplicationGroupIDInsensitively(input string) (*ApplicationGroupId, er
 	}
 
 	id := ApplicationGroupId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -110,7 +115,7 @@ func (id ApplicationGroupId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftDesktopVirtualization", "Microsoft.DesktopVirtualization", "Microsoft.DesktopVirtualization"),
 		resourceids.StaticSegment("staticApplicationGroups", "applicationGroups", "applicationGroups"),
-		resourceids.UserSpecifiedSegment("applicationGroupName", "applicationGroupValue"),
+		resourceids.UserSpecifiedSegment("applicationGroupName", "applicationGroupName"),
 	}
 }
 

@@ -34,6 +34,7 @@ func (o ListCustomHostNameAnalysisOperationOptions) ToHeaders() *client.Headers 
 
 func (o ListCustomHostNameAnalysisOperationOptions) ToOData() *odata.Query {
 	out := odata.Query{}
+
 	return &out
 }
 
@@ -53,8 +54,8 @@ func (c ContainerAppsClient) ListCustomHostNameAnalysis(ctx context.Context, id 
 			http.StatusOK,
 		},
 		HttpMethod:    http.MethodPost,
-		Path:          fmt.Sprintf("%s/listCustomHostNameAnalysis", id.ID()),
 		OptionsObject: options,
+		Path:          fmt.Sprintf("%s/listCustomHostNameAnalysis", id.ID()),
 	}
 
 	req, err := c.Client.NewRequest(ctx, opts)
@@ -74,7 +75,6 @@ func (c ContainerAppsClient) ListCustomHostNameAnalysis(ctx context.Context, id 
 
 	var model CustomHostnameAnalysisResult
 	result.Model = &model
-
 	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}

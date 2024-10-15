@@ -354,11 +354,8 @@ func (k ClusterResource) Read() sdk.ResourceFunc {
 				return fmt.Errorf("while reading data for cluster %q: %+v", id.ManagedClusterName, err)
 			}
 
-			nts, err := nodeTypeClient.ListByManagedClustersComplete(ctx, nodetype.ManagedClusterId{
-				SubscriptionId:     id.SubscriptionId,
-				ResourceGroupName:  id.ResourceGroupName,
-				ManagedClusterName: id.ManagedClusterName,
-			})
+			clusterId := nodetype.NewManagedClusterID(id.SubscriptionId, id.ResourceGroupName, id.ManagedClusterName)
+			nts, err := nodeTypeClient.ListByManagedClustersComplete(ctx, clusterId)
 			if err != nil {
 				return fmt.Errorf("while listing NodeTypes for cluster %q: +%v", id.ManagedClusterName, err)
 			}
@@ -723,7 +720,7 @@ func flattenNodetypeProperties(nt nodetype.NodeType) NodeType {
 			for idx, cert := range sec.VaultCertificates {
 				certs[idx] = VaultCertificates{
 					Store: cert.CertificateStore,
-					Url:   cert.CertificateUrl,
+					Url:   cert.CertificateURL,
 				}
 			}
 			secs[idx] = VmSecrets{
@@ -852,7 +849,7 @@ func expandNodeTypeProperties(nt *NodeType) (*nodetype.NodeTypeProperties, error
 		for cidx, cert := range secret.Certificates {
 			vcs[cidx] = nodetype.VaultCertificate{
 				CertificateStore: cert.Store,
-				CertificateUrl:   cert.Url,
+				CertificateURL:   cert.Url,
 			}
 		}
 		vmSecrets[idx] = nodetype.VaultSecretGroup{

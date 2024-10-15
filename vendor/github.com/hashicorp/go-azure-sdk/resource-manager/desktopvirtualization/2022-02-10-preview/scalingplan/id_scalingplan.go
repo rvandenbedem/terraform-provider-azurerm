@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&ScalingPlanId{})
+}
 
 var _ resourceids.ResourceId = &ScalingPlanId{}
 
@@ -37,7 +42,7 @@ func ParseScalingPlanID(input string) (*ScalingPlanId, error) {
 	}
 
 	id := ScalingPlanId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +59,7 @@ func ParseScalingPlanIDInsensitively(input string) (*ScalingPlanId, error) {
 	}
 
 	id := ScalingPlanId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -110,7 +115,7 @@ func (id ScalingPlanId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftDesktopVirtualization", "Microsoft.DesktopVirtualization", "Microsoft.DesktopVirtualization"),
 		resourceids.StaticSegment("staticScalingPlans", "scalingPlans", "scalingPlans"),
-		resourceids.UserSpecifiedSegment("scalingPlanName", "scalingPlanValue"),
+		resourceids.UserSpecifiedSegment("scalingPlanName", "scalingPlanName"),
 	}
 }
 

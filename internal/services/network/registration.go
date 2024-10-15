@@ -35,6 +35,8 @@ func (r Registration) DataSources() []sdk.DataSource {
 	return []sdk.DataSource{
 		ManagerDataSource{},
 		ManagerNetworkGroupDataSource{},
+		ManagerConnectivityConfigurationDataSource{},
+		VPNServerConfigurationDataSource{},
 	}
 }
 

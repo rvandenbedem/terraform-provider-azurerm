@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&RevisionsApiRevisionId{})
+}
 
 var _ resourceids.ResourceId = &RevisionsApiRevisionId{}
 
@@ -39,7 +44,7 @@ func ParseRevisionsApiRevisionID(input string) (*RevisionsApiRevisionId, error) 
 	}
 
 	id := RevisionsApiRevisionId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -56,7 +61,7 @@ func ParseRevisionsApiRevisionIDInsensitively(input string) (*RevisionsApiRevisi
 	}
 
 	id := RevisionsApiRevisionId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -116,11 +121,11 @@ func (id RevisionsApiRevisionId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftApp", "Microsoft.App", "Microsoft.App"),
 		resourceids.StaticSegment("staticContainerApps", "containerApps", "containerApps"),
-		resourceids.UserSpecifiedSegment("containerAppName", "containerAppValue"),
+		resourceids.UserSpecifiedSegment("containerAppName", "containerAppName"),
 		resourceids.StaticSegment("staticDetectorProperties", "detectorProperties", "detectorProperties"),
 		resourceids.StaticSegment("staticRevisionsApi", "revisionsApi", "revisionsApi"),
 		resourceids.StaticSegment("staticRevisions", "revisions", "revisions"),
-		resourceids.UserSpecifiedSegment("revisionName", "revisionValue"),
+		resourceids.UserSpecifiedSegment("revisionName", "revisionName"),
 	}
 }
 

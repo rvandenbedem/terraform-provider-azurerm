@@ -105,7 +105,7 @@ A `rules` block supports the following:
 
 * `schema_fields` - (Required) A list of fields to be included in the inventory. See the [Azure API reference](https://docs.microsoft.com/rest/api/storagerp/blob-inventory-policies/create-or-update#blobinventorypolicydefinition) for all the supported fields.
 
-* `filter` - (Optional) A `filter` block as defined above. Can only be set when the `scope` is `Blob`.
+* `filter` - (Optional) A `filter` block as defined above.
 
 ## Attributes Reference
 
@@ -127,5 +127,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 Storage Blob Inventory Policies can be imported using the `resource id`, e.g.
 
 ```shell
-terraform import azurerm_storage_blob_inventory_policy.example /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Storage/storageAccounts/storageAccount1/inventoryPolicies/inventoryPolicy1
+terraform import azurerm_storage_blob_inventory_policy.example /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Storage/storageAccounts/storageAccount1
 ```

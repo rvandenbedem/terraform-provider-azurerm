@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&DeletedConfigurationStoreId{})
+}
 
 var _ resourceids.ResourceId = &DeletedConfigurationStoreId{}
 
@@ -37,7 +42,7 @@ func ParseDeletedConfigurationStoreID(input string) (*DeletedConfigurationStoreI
 	}
 
 	id := DeletedConfigurationStoreId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +59,7 @@ func ParseDeletedConfigurationStoreIDInsensitively(input string) (*DeletedConfig
 	}
 
 	id := DeletedConfigurationStoreId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -108,9 +113,9 @@ func (id DeletedConfigurationStoreId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftAppConfiguration", "Microsoft.AppConfiguration", "Microsoft.AppConfiguration"),
 		resourceids.StaticSegment("staticLocations", "locations", "locations"),
-		resourceids.UserSpecifiedSegment("locationName", "locationValue"),
+		resourceids.UserSpecifiedSegment("locationName", "locationName"),
 		resourceids.StaticSegment("staticDeletedConfigurationStores", "deletedConfigurationStores", "deletedConfigurationStores"),
-		resourceids.UserSpecifiedSegment("deletedConfigurationStoreName", "deletedConfigurationStoreValue"),
+		resourceids.UserSpecifiedSegment("deletedConfigurationStoreName", "deletedConfigurationStoreName"),
 	}
 }
 

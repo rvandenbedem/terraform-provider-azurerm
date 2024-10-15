@@ -26,7 +26,7 @@ import (
 )
 
 func resourceNetAppPool() *pluginsdk.Resource {
-	return &pluginsdk.Resource{
+	resource := &pluginsdk.Resource{
 		Create: resourceNetAppPoolCreate,
 		Read:   resourceNetAppPoolRead,
 		Update: resourceNetAppPoolUpdate,
@@ -76,13 +76,13 @@ func resourceNetAppPool() *pluginsdk.Resource {
 			"size_in_tb": {
 				Type:         pluginsdk.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntBetween(2, 500),
+				ValidateFunc: validation.IntBetween(1, 2048),
 			},
 
 			"qos_type": {
 				Type:     pluginsdk.TypeString,
 				Optional: true,
-				Computed: true,
+				Default:  string(capacitypools.QosTypeAuto),
 				ValidateFunc: validation.StringInSlice([]string{
 					string(capacitypools.QosTypeAuto),
 					string(capacitypools.QosTypeManual),
@@ -103,6 +103,8 @@ func resourceNetAppPool() *pluginsdk.Resource {
 			"tags": commonschema.Tags(),
 		},
 	}
+
+	return resource
 }
 
 func resourceNetAppPoolCreate(d *pluginsdk.ResourceData, meta interface{}) error {

@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&CentralInstanceId{})
+}
 
 var _ resourceids.ResourceId = &CentralInstanceId{}
 
@@ -39,7 +44,7 @@ func ParseCentralInstanceID(input string) (*CentralInstanceId, error) {
 	}
 
 	id := CentralInstanceId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -56,7 +61,7 @@ func ParseCentralInstanceIDInsensitively(input string) (*CentralInstanceId, erro
 	}
 
 	id := CentralInstanceId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -116,9 +121,9 @@ func (id CentralInstanceId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftWorkloads", "Microsoft.Workloads", "Microsoft.Workloads"),
 		resourceids.StaticSegment("staticSapVirtualInstances", "sapVirtualInstances", "sapVirtualInstances"),
-		resourceids.UserSpecifiedSegment("sapVirtualInstanceName", "sapVirtualInstanceValue"),
+		resourceids.UserSpecifiedSegment("sapVirtualInstanceName", "sapVirtualInstanceName"),
 		resourceids.StaticSegment("staticCentralInstances", "centralInstances", "centralInstances"),
-		resourceids.UserSpecifiedSegment("centralInstanceName", "centralInstanceValue"),
+		resourceids.UserSpecifiedSegment("centralInstanceName", "centralInstanceName"),
 	}
 }
 

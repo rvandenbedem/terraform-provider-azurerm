@@ -42,6 +42,7 @@ func (o ListByServerOperationOptions) ToHeaders() *client.Headers {
 
 func (o ListByServerOperationOptions) ToOData() *odata.Query {
 	out := odata.Query{}
+
 	return &out
 }
 
@@ -62,6 +63,18 @@ func (o ListByServerOperationOptions) ToQuery() *client.QueryParams {
 	return &out
 }
 
+type ListByServerCustomPager struct {
+	NextLink *odata.Link `json:"nextLink"`
+}
+
+func (p *ListByServerCustomPager) NextPageLink() *odata.Link {
+	defer func() {
+		p.NextLink = nil
+	}()
+
+	return p.NextLink
+}
+
 // ListByServer ...
 func (c ConfigurationsClient) ListByServer(ctx context.Context, id FlexibleServerId, options ListByServerOperationOptions) (result ListByServerOperationResponse, err error) {
 	opts := client.RequestOptions{
@@ -70,8 +83,9 @@ func (c ConfigurationsClient) ListByServer(ctx context.Context, id FlexibleServe
 			http.StatusOK,
 		},
 		HttpMethod:    http.MethodGet,
-		Path:          fmt.Sprintf("%s/configurations", id.ID()),
 		OptionsObject: options,
+		Pager:         &ListByServerCustomPager{},
+		Path:          fmt.Sprintf("%s/configurations", id.ID()),
 	}
 
 	req, err := c.Client.NewRequest(ctx, opts)
@@ -112,6 +126,7 @@ func (c ConfigurationsClient) ListByServerCompleteMatchingPredicate(ctx context.
 
 	resp, err := c.ListByServer(ctx, id, options)
 	if err != nil {
+		result.LatestHttpResponse = resp.HttpResponse
 		err = fmt.Errorf("loading results: %+v", err)
 		return
 	}

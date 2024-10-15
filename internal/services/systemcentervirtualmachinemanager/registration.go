@@ -28,12 +28,17 @@ func (r Registration) WebsiteCategories() []string {
 }
 
 func (r Registration) DataSources() []sdk.DataSource {
-	return []sdk.DataSource{}
+	return []sdk.DataSource{
+		SystemCenterVirtualMachineManagerInventoryItemsDataSource{},
+	}
 }
 
 func (r Registration) Resources() []sdk.Resource {
 	return []sdk.Resource{
+		SystemCenterVirtualMachineManagerCloudResource{},
 		SystemCenterVirtualMachineManagerServerResource{},
 		SystemCenterVirtualMachineManagerAvailabilitySetResource{},
+		SystemCenterVirtualMachineManagerVirtualNetworkResource{},
+		SystemCenterVirtualMachineManagerVirtualMachineTemplateResource{},
 	}
 }

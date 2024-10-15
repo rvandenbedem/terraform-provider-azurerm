@@ -107,7 +107,6 @@ func resourceLogAnalyticsWorkspace() *pluginsdk.Resource {
 				Optional: true,
 				Computed: true,
 				ValidateFunc: validation.StringInSlice([]string{
-					string(workspaces.WorkspaceSkuNameEnumFree),
 					string(workspaces.WorkspaceSkuNameEnumPerGBTwoZeroOneEight),
 					string(workspaces.WorkspaceSkuNameEnumPerNode),
 					string(workspaces.WorkspaceSkuNameEnumPremium),
@@ -489,11 +488,7 @@ func resourceLogAnalyticsWorkspaceRead(d *pluginsdk.ResourceData, meta interface
 			}
 			d.Set("data_collection_rule_id", defaultDataCollectionRuleResourceId)
 
-			sharedKeyId := sharedKeyWorkspaces.WorkspaceId{
-				SubscriptionId:    id.SubscriptionId,
-				ResourceGroupName: id.ResourceGroupName,
-				WorkspaceName:     id.WorkspaceName,
-			}
+			sharedKeyId := sharedKeyWorkspaces.NewWorkspaceID(id.SubscriptionId, id.ResourceGroupName, id.WorkspaceName)
 			sharedKeysResp, err := sharedKeyClient.SharedKeysGetSharedKeys(ctx, sharedKeyId)
 			if err != nil {
 				log.Printf("[ERROR] Unable to List Shared keys for Log Analytics workspaces %s: %+v", id.WorkspaceName, err)
@@ -529,11 +524,7 @@ func resourceLogAnalyticsWorkspaceDelete(d *pluginsdk.ResourceData, meta interfa
 	defer cancel()
 
 	id, err := workspaces.ParseWorkspaceID(d.Id())
-	sharedKeyId := sharedKeyWorkspaces.WorkspaceId{
-		SubscriptionId:    id.SubscriptionId,
-		ResourceGroupName: id.ResourceGroupName,
-		WorkspaceName:     id.WorkspaceName,
-	}
+	sharedKeyId := sharedKeyWorkspaces.NewWorkspaceID(id.SubscriptionId, id.ResourceGroupName, id.WorkspaceName)
 	if err != nil {
 		return err
 	}

@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&AllowedEnvironmentTypeId{})
+}
 
 var _ resourceids.ResourceId = &AllowedEnvironmentTypeId{}
 
@@ -39,7 +44,7 @@ func ParseAllowedEnvironmentTypeID(input string) (*AllowedEnvironmentTypeId, err
 	}
 
 	id := AllowedEnvironmentTypeId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -56,7 +61,7 @@ func ParseAllowedEnvironmentTypeIDInsensitively(input string) (*AllowedEnvironme
 	}
 
 	id := AllowedEnvironmentTypeId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -116,9 +121,9 @@ func (id AllowedEnvironmentTypeId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftDevCenter", "Microsoft.DevCenter", "Microsoft.DevCenter"),
 		resourceids.StaticSegment("staticProjects", "projects", "projects"),
-		resourceids.UserSpecifiedSegment("projectName", "projectValue"),
+		resourceids.UserSpecifiedSegment("projectName", "projectName"),
 		resourceids.StaticSegment("staticAllowedEnvironmentTypes", "allowedEnvironmentTypes", "allowedEnvironmentTypes"),
-		resourceids.UserSpecifiedSegment("allowedEnvironmentTypeName", "allowedEnvironmentTypeValue"),
+		resourceids.UserSpecifiedSegment("allowedEnvironmentTypeName", "allowedEnvironmentTypeName"),
 	}
 }
 

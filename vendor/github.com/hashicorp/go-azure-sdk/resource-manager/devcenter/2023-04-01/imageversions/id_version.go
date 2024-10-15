@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&VersionId{})
+}
 
 var _ resourceids.ResourceId = &VersionId{}
 
@@ -43,7 +48,7 @@ func ParseVersionID(input string) (*VersionId, error) {
 	}
 
 	id := VersionId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -60,7 +65,7 @@ func ParseVersionIDInsensitively(input string) (*VersionId, error) {
 	}
 
 	id := VersionId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -128,13 +133,13 @@ func (id VersionId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftDevCenter", "Microsoft.DevCenter", "Microsoft.DevCenter"),
 		resourceids.StaticSegment("staticDevCenters", "devCenters", "devCenters"),
-		resourceids.UserSpecifiedSegment("devCenterName", "devCenterValue"),
+		resourceids.UserSpecifiedSegment("devCenterName", "devCenterName"),
 		resourceids.StaticSegment("staticGalleries", "galleries", "galleries"),
-		resourceids.UserSpecifiedSegment("galleryName", "galleryValue"),
+		resourceids.UserSpecifiedSegment("galleryName", "galleryName"),
 		resourceids.StaticSegment("staticImages", "images", "images"),
-		resourceids.UserSpecifiedSegment("imageName", "imageValue"),
+		resourceids.UserSpecifiedSegment("imageName", "imageName"),
 		resourceids.StaticSegment("staticVersions", "versions", "versions"),
-		resourceids.UserSpecifiedSegment("versionName", "versionValue"),
+		resourceids.UserSpecifiedSegment("versionName", "versionName"),
 	}
 }
 

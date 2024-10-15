@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&ProviderInstanceId{})
+}
 
 var _ resourceids.ResourceId = &ProviderInstanceId{}
 
@@ -39,7 +44,7 @@ func ParseProviderInstanceID(input string) (*ProviderInstanceId, error) {
 	}
 
 	id := ProviderInstanceId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -56,7 +61,7 @@ func ParseProviderInstanceIDInsensitively(input string) (*ProviderInstanceId, er
 	}
 
 	id := ProviderInstanceId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -116,9 +121,9 @@ func (id ProviderInstanceId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftWorkloads", "Microsoft.Workloads", "Microsoft.Workloads"),
 		resourceids.StaticSegment("staticMonitors", "monitors", "monitors"),
-		resourceids.UserSpecifiedSegment("monitorName", "monitorValue"),
+		resourceids.UserSpecifiedSegment("monitorName", "monitorName"),
 		resourceids.StaticSegment("staticProviderInstances", "providerInstances", "providerInstances"),
-		resourceids.UserSpecifiedSegment("providerInstanceName", "providerInstanceValue"),
+		resourceids.UserSpecifiedSegment("providerInstanceName", "providerInstanceName"),
 	}
 }
 

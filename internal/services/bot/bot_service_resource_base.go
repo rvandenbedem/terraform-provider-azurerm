@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/bot/parse"
+	kvValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tags"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/validation"
@@ -71,16 +72,18 @@ func (br botBaseResource) arguments(fields map[string]*pluginsdk.Schema) map[str
 			Optional:     true,
 			Sensitive:    true,
 			ValidateFunc: validation.StringIsNotEmpty,
-			DiffSuppressFunc: func(k, old, new string, d *pluginsdk.ResourceData) bool {
-				// This field for the api key isn't returned at all from Azure
-				return (new == d.Get(k).(string)) && (old == "")
-			},
 		},
 
 		"developer_app_insights_application_id": {
 			Type:         pluginsdk.TypeString,
 			Optional:     true,
-			ValidateFunc: validation.IsUUID,
+			ValidateFunc: validation.StringIsNotEmpty,
+		},
+
+		"cmk_key_vault_key_url": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			ValidateFunc: kvValidate.NestedItemIdWithOptionalVersion,
 		},
 
 		"microsoft_app_msi_id": {
@@ -206,6 +209,8 @@ func (br botBaseResource) createFunc(resourceName, botKind string) sdk.ResourceF
 					DeveloperAppInsightsAPIKey:        pointer.To(metadata.ResourceData.Get("developer_app_insights_api_key").(string)),
 					DeveloperAppInsightsApplicationID: pointer.To(metadata.ResourceData.Get("developer_app_insights_application_id").(string)),
 					DisableLocalAuth:                  pointer.To(!metadata.ResourceData.Get("local_authentication_enabled").(bool)),
+					IsCmekEnabled:                     utils.Bool(false),
+					CmekKeyVaultURL:                   pointer.To(metadata.ResourceData.Get("cmk_key_vault_key_url").(string)),
 					LuisAppIds:                        utils.ExpandStringSlice(metadata.ResourceData.Get("luis_app_ids").([]interface{})),
 					LuisKey:                           pointer.To(metadata.ResourceData.Get("luis_key").(string)),
 					PublicNetworkAccess:               publicNetworkEnabled,
@@ -213,6 +218,10 @@ func (br botBaseResource) createFunc(resourceName, botKind string) sdk.ResourceF
 					IconURL:                           pointer.To(metadata.ResourceData.Get("icon_url").(string)),
 				},
 				Tags: tags.Expand(metadata.ResourceData.Get("tags").(map[string]interface{})),
+			}
+
+			if _, ok := metadata.ResourceData.GetOk("cmk_key_vault_key_url"); ok {
+				props.Properties.IsCmekEnabled = utils.Bool(true)
 			}
 
 			if v, ok := metadata.ResourceData.GetOk("microsoft_app_type"); ok {
@@ -344,6 +353,11 @@ func (br botBaseResource) readFunc() sdk.ResourceFunc {
 
 			metadata.ResourceData.Set("tags", tags.ToTypedObject(resp.Tags))
 
+			// The API doesn't return this property, so we need to set the value from config into state
+			if apiKey, ok := metadata.ResourceData.GetOk("developer_app_insights_api_key"); ok && apiKey.(string) != "" {
+				metadata.ResourceData.Set("developer_app_insights_api_key", apiKey.(string))
+			}
+
 			if props := resp.Properties; props != nil {
 				msAppId := ""
 				if v := props.MsaAppID; v != nil {
@@ -368,12 +382,6 @@ func (br botBaseResource) readFunc() sdk.ResourceFunc {
 					key = *v
 				}
 				metadata.ResourceData.Set("developer_app_insights_key", key)
-
-				apiKey := ""
-				if v := props.DeveloperAppInsightsAPIKey; v != nil {
-					apiKey = *v
-				}
-				metadata.ResourceData.Set("developer_app_insights_api_key", apiKey)
 
 				appInsightsId := ""
 				if v := props.DeveloperAppInsightsApplicationID; v != nil {
@@ -424,6 +432,8 @@ func (br botBaseResource) readFunc() sdk.ResourceFunc {
 				metadata.ResourceData.Set("streaming_endpoint_enabled", streamingEndpointEnabled)
 
 				metadata.ResourceData.Set("icon_url", pointer.From(props.IconURL))
+
+				metadata.ResourceData.Set("cmk_key_vault_key_url", pointer.From(props.CmekKeyVaultURL))
 			}
 
 			return nil

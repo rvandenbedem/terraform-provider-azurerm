@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/go-azure-sdk/resource-manager/nginx/2024-01-01-preview/nginxdeployment"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/nginx/2024-06-01-preview/nginxdeployment"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
@@ -100,16 +100,14 @@ func (a DeploymentResource) basic(data acceptance.TestData) string {
 	return fmt.Sprintf(`
 
 
-
-
 %s
 
 resource "azurerm_nginx_deployment" "test" {
   name                      = "acctest-%[2]d"
   resource_group_name       = azurerm_resource_group.test.name
-  sku                       = "standard_Monthly"
+  sku                       = "standardv2_Monthly"
   location                  = azurerm_resource_group.test.location
-  diagnose_support_enabled  = true
+  diagnose_support_enabled  = false
   automatic_upgrade_channel = "stable"
 
   frontend_public {
@@ -140,9 +138,9 @@ func (a DeploymentResource) basicAutoscaling(data acceptance.TestData) string {
 resource "azurerm_nginx_deployment" "test" {
   name                      = "acctest-%[2]d"
   resource_group_name       = azurerm_resource_group.test.name
-  sku                       = "standard_Monthly"
+  sku                       = "standardv2_Monthly"
   location                  = azurerm_resource_group.test.location
-  diagnose_support_enabled  = true
+  diagnose_support_enabled  = false
   automatic_upgrade_channel = "stable"
 
   frontend_public {
@@ -183,9 +181,9 @@ func (a DeploymentResource) basicAutoscaling_update(data acceptance.TestData) st
 resource "azurerm_nginx_deployment" "test" {
   name                      = "acctest-%[2]d"
   resource_group_name       = azurerm_resource_group.test.name
-  sku                       = "standard_Monthly"
+  sku                       = "standardv2_Monthly"
   location                  = azurerm_resource_group.test.location
-  diagnose_support_enabled  = true
+  diagnose_support_enabled  = false
   automatic_upgrade_channel = "stable"
 
   frontend_public {
@@ -226,7 +224,7 @@ func (a DeploymentResource) update(data acceptance.TestData) string {
 resource "azurerm_nginx_deployment" "test" {
   name                     = "acctest-%[2]d"
   resource_group_name      = azurerm_resource_group.test.name
-  sku                      = "standard_Monthly"
+  sku                      = "standardv2_Monthly"
   location                 = azurerm_resource_group.test.location
   diagnose_support_enabled = false
 
@@ -258,7 +256,7 @@ func (a DeploymentResource) systemAssignedIdentity(data acceptance.TestData) str
 resource "azurerm_nginx_deployment" "test" {
   name                = "acctest-%[2]d"
   resource_group_name = azurerm_resource_group.test.name
-  sku                 = "standard_Monthly"
+  sku                 = "standardv2_Monthly"
   location            = azurerm_resource_group.test.location
 
   identity {
@@ -295,7 +293,7 @@ resource "azurerm_user_assigned_identity" "test" {
 resource "azurerm_nginx_deployment" "test" {
   name                = "acctest-%[2]d"
   resource_group_name = azurerm_resource_group.test.name
-  sku                 = "standard_Monthly"
+  sku                 = "standardv2_Monthly"
   location            = azurerm_resource_group.test.location
 
   identity {

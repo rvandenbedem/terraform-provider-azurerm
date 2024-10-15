@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-azure-helpers/lang/pointer"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/web/2023-01-01/webapps"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/web/2023-12-01/webapps"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	apimValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/apimanagement/validate"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
@@ -702,7 +702,7 @@ func ExpandSiteConfigWindowsFunctionAppSlot(siteConfig []SiteConfigWindowsFuncti
 	windowsSlotSiteConfig := siteConfig[0]
 
 	if metadata.ResourceData.HasChange("site_config.0.health_check_path") || metadata.ResourceData.HasChange("site_config.0.health_check_eviction_time_in_min") {
-		v := strconv.Itoa(int(windowsSlotSiteConfig.HealthCheckEvictionTime))
+		v := strconv.FormatInt(windowsSlotSiteConfig.HealthCheckEvictionTime, 10)
 		if v == "0" || windowsSlotSiteConfig.HealthCheckPath == "" {
 			appSettings = updateOrAppendAppSettings(appSettings, "WEBSITE_HEALTHCHECK_MAXPINGFAILURES", v, true)
 		} else {
@@ -986,7 +986,7 @@ func ExpandSiteConfigLinuxFunctionAppSlot(siteConfig []SiteConfigLinuxFunctionAp
 	linuxSlotSiteConfig := siteConfig[0]
 
 	if metadata.ResourceData.HasChange("site_config.0.health_check_path") || metadata.ResourceData.HasChange("site_config.0.health_check_eviction_time_in_min") {
-		v := strconv.Itoa(int(linuxSlotSiteConfig.HealthCheckEvictionTime))
+		v := strconv.FormatInt(linuxSlotSiteConfig.HealthCheckEvictionTime, 10)
 		if v == "0" || linuxSlotSiteConfig.HealthCheckPath == "" {
 			appSettings = updateOrAppendAppSettings(appSettings, "WEBSITE_HEALTHCHECK_MAXPINGFAILURES", v, true)
 		} else {

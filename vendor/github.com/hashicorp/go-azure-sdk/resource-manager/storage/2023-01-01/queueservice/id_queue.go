@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&QueueId{})
+}
 
 var _ resourceids.ResourceId = &QueueId{}
 
@@ -39,7 +44,7 @@ func ParseQueueID(input string) (*QueueId, error) {
 	}
 
 	id := QueueId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -56,7 +61,7 @@ func ParseQueueIDInsensitively(input string) (*QueueId, error) {
 	}
 
 	id := QueueId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -116,11 +121,11 @@ func (id QueueId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftStorage", "Microsoft.Storage", "Microsoft.Storage"),
 		resourceids.StaticSegment("staticStorageAccounts", "storageAccounts", "storageAccounts"),
-		resourceids.UserSpecifiedSegment("storageAccountName", "storageAccountValue"),
+		resourceids.UserSpecifiedSegment("storageAccountName", "storageAccountName"),
 		resourceids.StaticSegment("staticQueueServices", "queueServices", "queueServices"),
 		resourceids.StaticSegment("staticDefault", "default", "default"),
 		resourceids.StaticSegment("staticQueues", "queues", "queues"),
-		resourceids.UserSpecifiedSegment("queueName", "queueValue"),
+		resourceids.UserSpecifiedSegment("queueName", "queueName"),
 	}
 }
 

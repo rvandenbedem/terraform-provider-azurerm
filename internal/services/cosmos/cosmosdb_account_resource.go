@@ -20,13 +20,13 @@ import (
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/identity"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/tags"
-	"github.com/hashicorp/go-azure-sdk/resource-manager/cosmosdb/2023-04-15/cosmosdb"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/cosmosdb/2024-05-15/cosmosdb"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/clients"
-	"github.com/hashicorp/terraform-provider-azurerm/internal/features"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/cosmos/common"
+	"github.com/hashicorp/terraform-provider-azurerm/internal/services/cosmos/migration"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/cosmos/parse"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/cosmos/validate"
 	keyVaultParse "github.com/hashicorp/terraform-provider-azurerm/internal/services/keyvault/parse"
@@ -68,6 +68,7 @@ const (
 	databaseAccountCapabilitiesEnableMongoRetryableWrites        databaseAccountCapabilities = "EnableMongoRetryableWrites"
 	databaseAccountCapabilitiesEnableMongoRoleBasedAccessControl databaseAccountCapabilities = "EnableMongoRoleBasedAccessControl"
 	databaseAccountCapabilitiesEnableUniqueCompoundNestedDocs    databaseAccountCapabilities = "EnableUniqueCompoundNestedDocs"
+	databaseAccountCapabilitiesEnableNoSqlVectorSearch           databaseAccountCapabilities = "EnableNoSQLVectorSearch"
 	databaseAccountCapabilitiesEnableTtlOnCustomPath             databaseAccountCapabilities = "EnableTtlOnCustomPath"
 	databaseAccountCapabilitiesEnablePartialUniqueIndex          databaseAccountCapabilities = "EnablePartialUniqueIndex"
 )
@@ -99,6 +100,7 @@ var capabilitiesToKindMap = map[string]interface{}{
 	strings.ToLower(string(databaseAccountCapabilitiesEnableUniqueCompoundNestedDocs)):    []string{strings.ToLower(string(cosmosdb.DatabaseAccountKindMongoDB))},
 	strings.ToLower(string(databaseAccountCapabilitiesEnableTtlOnCustomPath)):             []string{strings.ToLower(string(cosmosdb.DatabaseAccountKindMongoDB))},
 	strings.ToLower(string(databaseAccountCapabilitiesEnablePartialUniqueIndex)):          []string{strings.ToLower(string(cosmosdb.DatabaseAccountKindMongoDB))},
+	strings.ToLower(string(databaseAccountCapabilitiesEnableNoSqlVectorSearch)):           []string{strings.ToLower(string(cosmosdb.DatabaseAccountKindGlobalDocumentDB))},
 	strings.ToLower(string(databaseAccountCapabilitiesEnableCassandra)):                   []string{strings.ToLower(string(cosmosdb.DatabaseAccountKindGlobalDocumentDB)), strings.ToLower(string(cosmosdb.DatabaseAccountKindParse))},
 	strings.ToLower(string(databaseAccountCapabilitiesEnableGremlin)):                     []string{strings.ToLower(string(cosmosdb.DatabaseAccountKindGlobalDocumentDB)), strings.ToLower(string(cosmosdb.DatabaseAccountKindParse))},
 	strings.ToLower(string(databaseAccountCapabilitiesEnableTable)):                       []string{strings.ToLower(string(cosmosdb.DatabaseAccountKindGlobalDocumentDB)), strings.ToLower(string(cosmosdb.DatabaseAccountKindParse))},
@@ -183,6 +185,12 @@ func resourceCosmosDbAccount() *pluginsdk.Resource {
 			Delete: pluginsdk.DefaultTimeout(180 * time.Minute),
 		},
 
+		SchemaVersion: 1,
+
+		StateUpgraders: pluginsdk.StateUpgrades(map[int]pluginsdk.StateUpgrade{
+			0: migration.CosmosDBAccountV0toV1{},
+		}),
+
 		Schema: map[string]*pluginsdk.Schema{
 			"name": {
 				Type:     pluginsdk.TypeString,
@@ -242,12 +250,11 @@ func resourceCosmosDbAccount() *pluginsdk.Resource {
 				},
 			},
 
-			// TODO: 4.0 - set the default to Tls12
 			// per Microsoft's documentation, as of April 1 2023 the default minimal TLS version for all new accounts is 1.2
 			"minimal_tls_version": {
 				Type:         pluginsdk.TypeString,
 				Optional:     true,
-				Computed:     true,
+				Default:      string(cosmosdb.MinimalTlsVersionTlsOneTwo),
 				ValidateFunc: validation.StringInSlice(cosmosdb.PossibleValuesForMinimalTlsVersion(), false),
 			},
 
@@ -289,29 +296,16 @@ func resourceCosmosDbAccount() *pluginsdk.Resource {
 				}, false),
 			},
 
-			"ip_range_filter": func() *schema.Schema {
-				if features.FourPointOhBeta() {
-					return &schema.Schema{
-						Type:     pluginsdk.TypeSet,
-						Optional: true,
-						Elem: &pluginsdk.Schema{
-							Type:         pluginsdk.TypeString,
-							ValidateFunc: validation.IsCIDR,
-						},
-					}
-				}
-				return &schema.Schema{
-					Type:     pluginsdk.TypeString,
-					Optional: true,
-					ValidateFunc: validation.StringMatch(
-						regexp.MustCompile(`^(\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(/([1-2][0-9]|3[0-2]|[3-9]))?\b[,]?)*$`),
-						"Cosmos DB ip_range_filter must be a set of CIDR IP addresses separated by commas with no spaces: '10.0.0.1,10.0.0.2,10.20.0.0/16'",
-					),
-				}
-			}(),
+			"ip_range_filter": {
+				Type:     pluginsdk.TypeSet,
+				Optional: true,
+				Elem: &pluginsdk.Schema{
+					Type:         pluginsdk.TypeString,
+					ValidateFunc: validation.Any(validation.IsCIDR, validation.IsIPv4Address),
+				},
+			},
 
-			// TODO 4.0: change this from enable_* to *_enabled
-			"enable_free_tier": {
+			"free_tier_enabled": {
 				Type:     pluginsdk.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -330,8 +324,7 @@ func resourceCosmosDbAccount() *pluginsdk.Resource {
 				Default:  true,
 			},
 
-			// TODO 4.0: change this from enable_* to *_enabled
-			"enable_automatic_failover": {
+			"automatic_failover_enabled": {
 				Type:     pluginsdk.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -436,6 +429,7 @@ func resourceCosmosDbAccount() *pluginsdk.Resource {
 								string(databaseAccountCapabilitiesEnableMongoRetryableWrites),
 								string(databaseAccountCapabilitiesEnableMongoRoleBasedAccessControl),
 								string(databaseAccountCapabilitiesEnableUniqueCompoundNestedDocs),
+								string(databaseAccountCapabilitiesEnableNoSqlVectorSearch),
 								string(databaseAccountCapabilitiesEnableTtlOnCustomPath),
 								string(databaseAccountCapabilitiesEnablePartialUniqueIndex),
 							}, false),
@@ -471,13 +465,6 @@ func resourceCosmosDbAccount() *pluginsdk.Resource {
 				Set: resourceAzureRMCosmosDBAccountVirtualNetworkRuleHash,
 			},
 
-			// TODO 4.0: change this from enable_* to *_enabled
-			"enable_multiple_write_locations": {
-				Type:     pluginsdk.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
-
 			"access_key_metadata_writes_enabled": {
 				Type:     pluginsdk.TypeBool,
 				Optional: true,
@@ -502,6 +489,12 @@ func resourceCosmosDbAccount() *pluginsdk.Resource {
 				}, false),
 			},
 
+			"multiple_write_locations_enabled": {
+				Type:     pluginsdk.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
 			"network_acl_bypass_for_azure_services": {
 				Type:     pluginsdk.TypeBool,
 				Optional: true,
@@ -517,6 +510,12 @@ func resourceCosmosDbAccount() *pluginsdk.Resource {
 			},
 
 			"partition_merge_enabled": {
+				Type:     pluginsdk.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
+			"burst_capacity_enabled": {
 				Type:     pluginsdk.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -709,16 +708,6 @@ func resourceCosmosDbAccount() *pluginsdk.Resource {
 				Sensitive: true,
 			},
 
-			"connection_strings": {
-				Type:      pluginsdk.TypeList,
-				Computed:  true,
-				Sensitive: true,
-				Elem: &pluginsdk.Schema{
-					Type:      pluginsdk.TypeString,
-					Sensitive: true,
-				},
-			},
-
 			"primary_sql_connection_string": {
 				Type:      pluginsdk.TypeString,
 				Computed:  true,
@@ -795,23 +784,20 @@ func resourceCosmosDbAccountCreate(d *pluginsdk.ResourceData, meta interface{}) 
 		}
 	}
 
-	location := azure.NormalizeLocation(d.Get("location").(string))
+	location := location.Normalize(d.Get("location").(string))
 	t := d.Get("tags").(map[string]interface{})
 	kind := d.Get("kind").(string)
 	offerType := d.Get("offer_type").(string)
 
-	var ipRangeFilter *[]cosmosdb.IPAddressOrRange
-	if features.FourPointOhBeta() {
-		ipRangeFilter = common.CosmosDBIpRangeFilterToIpRules(*utils.ExpandStringSlice(d.Get("ip_range_filter").(*pluginsdk.Set).List()))
-	} else {
-		ipRangeFilter = common.CosmosDBIpRangeFilterToIpRulesThreePointOh(d.Get("ip_range_filter").(string))
-	}
-
+	ipRangeFilter := common.CosmosDBIpRangeFilterToIpRules(*utils.ExpandStringSlice(d.Get("ip_range_filter").(*pluginsdk.Set).List()))
 	isVirtualNetworkFilterEnabled := d.Get("is_virtual_network_filter_enabled").(bool)
-	enableFreeTier := d.Get("enable_free_tier").(bool)
-	enableAutomaticFailover := d.Get("enable_automatic_failover").(bool)
-	enableMultipleWriteLocations := d.Get("enable_multiple_write_locations").(bool)
+
+	enableFreeTier := d.Get("free_tier_enabled").(bool)
+	enableAutomaticFailover := d.Get("automatic_failover_enabled").(bool)
+	enableMultipleWriteLocations := d.Get("multiple_write_locations_enabled").(bool)
+
 	partitionMergeEnabled := d.Get("partition_merge_enabled").(bool)
+	burstCapacityEnabled := d.Get("burst_capacity_enabled").(bool)
 	enableAnalyticalStorage := d.Get("analytical_storage_enabled").(bool)
 	disableLocalAuthentication := d.Get("local_authentication_disabled").(bool)
 
@@ -865,6 +851,7 @@ func resourceCosmosDbAccountCreate(d *pluginsdk.ResourceData, meta interface{}) 
 			VirtualNetworkRules:                expandAzureRmCosmosDBAccountVirtualNetworkRules(d),
 			EnableMultipleWriteLocations:       utils.Bool(enableMultipleWriteLocations),
 			EnablePartitionMerge:               pointer.To(partitionMergeEnabled),
+			EnableBurstCapacity:                pointer.To(burstCapacityEnabled),
 			PublicNetworkAccess:                pointer.To(publicNetworkAccess),
 			EnableAnalyticalStorage:            utils.Bool(enableAnalyticalStorage),
 			Cors:                               common.ExpandCosmosCorsRule(d.Get("cors_rule").([]interface{})),
@@ -1034,27 +1021,21 @@ func resourceCosmosDbAccountUpdate(d *pluginsdk.ResourceData, meta interface{}) 
 
 	updateRequired := false
 	if props := existing.Model.Properties; props != nil {
-		location := azure.NormalizeLocation(pointer.From(existing.Model.Location))
+		location := location.Normalize(pointer.From(existing.Model.Location))
 		offerType := d.Get("offer_type").(string)
 		t := tags.Expand(d.Get("tags").(map[string]interface{}))
 		kind := cosmosdb.DatabaseAccountKind(d.Get("kind").(string))
 		isVirtualNetworkFilterEnabled := pointer.To(d.Get("is_virtual_network_filter_enabled").(bool))
-		enableFreeTier := pointer.To(d.Get("enable_free_tier").(bool))
-		enableAutomaticFailover := pointer.To(d.Get("enable_automatic_failover").(bool))
 		enableAnalyticalStorage := pointer.To(d.Get("analytical_storage_enabled").(bool))
 		disableLocalAuthentication := pointer.To(d.Get("local_authentication_disabled").(bool))
+		enableAutomaticFailover := pointer.To(d.Get("automatic_failover_enabled").(bool))
 
 		networkByPass := cosmosdb.NetworkAclBypassNone
 		if d.Get("network_acl_bypass_for_azure_services").(bool) {
 			networkByPass = cosmosdb.NetworkAclBypassAzureServices
 		}
 
-		var ipRangeFilter *[]cosmosdb.IPAddressOrRange
-		if features.FourPointOhBeta() {
-			ipRangeFilter = common.CosmosDBIpRangeFilterToIpRules(*utils.ExpandStringSlice(d.Get("ip_range_filter").(*pluginsdk.Set).List()))
-		} else {
-			ipRangeFilter = common.CosmosDBIpRangeFilterToIpRulesThreePointOh(d.Get("ip_range_filter").(string))
-		}
+		ipRangeFilter := common.CosmosDBIpRangeFilterToIpRules(*utils.ExpandStringSlice(d.Get("ip_range_filter").(*pluginsdk.Set).List()))
 
 		publicNetworkAccess := cosmosdb.PublicNetworkAccessEnabled
 		if enabled := d.Get("public_network_access_enabled").(bool); !enabled {
@@ -1065,12 +1046,13 @@ func resourceCosmosDbAccountUpdate(d *pluginsdk.ResourceData, meta interface{}) 
 		// 'DatabaseAccountCreateUpdateParameters' below or
 		// are included in the 'DatabaseAccountCreateUpdateParameters'
 		// later, however we need to know if they changed or not...
+		// TODO Post 4.0 remove `enable_automatic_failover` from this list
 		if d.HasChanges("consistency_policy", "virtual_network_rule", "cors_rule", "access_key_metadata_writes_enabled",
 			"network_acl_bypass_for_azure_services", "network_acl_bypass_ids", "analytical_storage",
 			"capacity", "create_mode", "restore", "key_vault_key_id", "mongo_server_version",
 			"public_network_access_enabled", "ip_range_filter", "offer_type", "is_virtual_network_filter_enabled",
-			"kind", "tags", "enable_free_tier", "enable_automatic_failover", "analytical_storage_enabled",
-			"local_authentication_disabled", "partition_merge_enabled", "minimal_tls_version") {
+			"kind", "tags", "enable_automatic_failover", "automatic_failover_enabled", "analytical_storage_enabled",
+			"local_authentication_disabled", "partition_merge_enabled", "minimal_tls_version", "burst_capacity_enabled") {
 			updateRequired = true
 		}
 
@@ -1102,7 +1084,7 @@ func resourceCosmosDbAccountUpdate(d *pluginsdk.ResourceData, meta interface{}) 
 				DatabaseAccountOfferType:           cosmosdb.DatabaseAccountOfferType(offerType),
 				IPRules:                            ipRangeFilter,
 				IsVirtualNetworkFilterEnabled:      isVirtualNetworkFilterEnabled,
-				EnableFreeTier:                     enableFreeTier,
+				EnableFreeTier:                     existing.Model.Properties.EnableFreeTier,
 				EnableAutomaticFailover:            enableAutomaticFailover,
 				MinimalTlsVersion:                  pointer.To(cosmosdb.MinimalTlsVersion(d.Get("minimal_tls_version").(string))),
 				Capabilities:                       capabilities,
@@ -1119,6 +1101,7 @@ func resourceCosmosDbAccountUpdate(d *pluginsdk.ResourceData, meta interface{}) 
 				DisableLocalAuth:                   disableLocalAuthentication,
 				BackupPolicy:                       backup,
 				EnablePartitionMerge:               pointer.To(d.Get("partition_merge_enabled").(bool)),
+				EnableBurstCapacity:                pointer.To(d.Get("burst_capacity_enabled").(bool)),
 			},
 			Tags: t,
 		}
@@ -1164,9 +1147,9 @@ func resourceCosmosDbAccountUpdate(d *pluginsdk.ResourceData, meta interface{}) 
 			account.Properties.RestoreParameters = expandCosmosdbAccountRestoreParameters(v.([]interface{}))
 		}
 
-		if v, ok := d.GetOk("mongo_server_version"); ok {
+		if !pluginsdk.IsExplicitlyNullInConfig(d, "mongo_server_version") {
 			account.Properties.ApiProperties = &cosmosdb.ApiProperties{
-				ServerVersion: pointer.To(cosmosdb.ServerVersion(v.(string))),
+				ServerVersion: pointer.To(cosmosdb.ServerVersion(d.Get("mongo_server_version").(string))),
 			}
 		}
 
@@ -1183,10 +1166,10 @@ func resourceCosmosDbAccountUpdate(d *pluginsdk.ResourceData, meta interface{}) 
 		}
 
 		// Update the following properties independently after the initial CreateOrUpdate...
-		if d.HasChange("enable_multiple_write_locations") {
+		if d.HasChange("multiple_write_locations_enabled") {
 			log.Printf("[INFO] Updating AzureRM Cosmos DB Account: Updating 'EnableMultipleWriteLocations'")
 
-			enableMultipleWriteLocations := pointer.To(d.Get("enable_multiple_write_locations").(bool))
+			enableMultipleWriteLocations := pointer.To(d.Get("multiple_write_locations_enabled").(bool))
 			if props.EnableMultipleWriteLocations != enableMultipleWriteLocations {
 				account.Properties.EnableMultipleWriteLocations = enableMultipleWriteLocations
 
@@ -1390,27 +1373,29 @@ func resourceCosmosDbAccountRead(d *pluginsdk.ResourceData, meta interface{}) er
 	if props := existing.Model.Properties; props != nil {
 		d.Set("offer_type", pointer.From(props.DatabaseAccountOfferType))
 
-		if features.FourPointOhBeta() {
-			d.Set("ip_range_filter", common.CosmosDBIpRulesToIpRangeFilter(props.IPRules))
-		} else {
-			d.Set("ip_range_filter", common.CosmosDBIpRulesToIpRangeFilterThreePointOh(props.IPRules))
-		}
+		d.Set("ip_range_filter", common.CosmosDBIpRulesToIpRangeFilter(props.IPRules))
 
 		d.Set("endpoint", props.DocumentEndpoint)
-		d.Set("enable_free_tier", props.EnableFreeTier)
+
+		d.Set("free_tier_enabled", props.EnableFreeTier)
 		d.Set("analytical_storage_enabled", props.EnableAnalyticalStorage)
 		d.Set("public_network_access_enabled", pointer.From(props.PublicNetworkAccess) == cosmosdb.PublicNetworkAccessEnabled)
-		d.Set("default_identity_type", props.DefaultIdentity)
+		if props.DefaultIdentity == nil || *props.DefaultIdentity != "" {
+			d.Set("default_identity_type", props.DefaultIdentity)
+		} else {
+			d.Set("default_identity_type", "FirstPartyIdentity")
+		}
 		d.Set("minimal_tls_version", pointer.From(props.MinimalTlsVersion))
 		d.Set("create_mode", pointer.From(props.CreateMode))
 		d.Set("partition_merge_enabled", pointer.From(props.EnablePartitionMerge))
+		d.Set("burst_capacity_enabled", pointer.From(props.EnableBurstCapacity))
 
 		if v := existing.Model.Properties.IsVirtualNetworkFilterEnabled; v != nil {
 			d.Set("is_virtual_network_filter_enabled", props.IsVirtualNetworkFilterEnabled)
 		}
 
 		if v := existing.Model.Properties.EnableAutomaticFailover; v != nil {
-			d.Set("enable_automatic_failover", props.EnableAutomaticFailover)
+			d.Set("automatic_failover_enabled", props.EnableAutomaticFailover)
 		}
 
 		if v := existing.Model.Properties.KeyVaultKeyUri; v != nil {
@@ -1418,7 +1403,7 @@ func resourceCosmosDbAccountRead(d *pluginsdk.ResourceData, meta interface{}) er
 		}
 
 		if v := existing.Model.Properties.EnableMultipleWriteLocations; v != nil {
-			d.Set("enable_multiple_write_locations", props.EnableMultipleWriteLocations)
+			d.Set("multiple_write_locations_enabled", props.EnableMultipleWriteLocations)
 		}
 
 		if err := d.Set("analytical_storage", flattenCosmosDBAccountAnalyticalStorageConfiguration(props.AnalyticalStorageConfiguration)); err != nil {
@@ -1549,8 +1534,6 @@ func resourceCosmosDbAccountRead(d *pluginsdk.ResourceData, meta interface{}) er
 			}
 		}
 	}
-
-	d.Set("connection_strings", connStrings)
 
 	return tags.FlattenAndSet(d, existing.Model.Tags)
 }

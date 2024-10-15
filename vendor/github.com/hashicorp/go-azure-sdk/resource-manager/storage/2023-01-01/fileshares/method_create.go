@@ -34,6 +34,7 @@ func (o CreateOperationOptions) ToHeaders() *client.Headers {
 
 func (o CreateOperationOptions) ToOData() *odata.Query {
 	out := odata.Query{}
+
 	return &out
 }
 
@@ -54,8 +55,8 @@ func (c FileSharesClient) Create(ctx context.Context, id ShareId, input FileShar
 			http.StatusOK,
 		},
 		HttpMethod:    http.MethodPut,
-		Path:          id.ID(),
 		OptionsObject: options,
+		Path:          id.ID(),
 	}
 
 	req, err := c.Client.NewRequest(ctx, opts)
@@ -79,7 +80,6 @@ func (c FileSharesClient) Create(ctx context.Context, id ShareId, input FileShar
 
 	var model FileShare
 	result.Model = &model
-
 	if err = resp.Unmarshal(result.Model); err != nil {
 		return
 	}

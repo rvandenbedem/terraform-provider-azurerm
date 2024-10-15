@@ -71,7 +71,11 @@ func RequestRetryAll(retryFuncs ...RequestRetryFunc) func(resp *http.Response, o
 // RetryableErrorHandler simply returns the resp and err, this is needed to make the Do() method
 // of retryablehttp client return early with the response body not drained.
 func RetryableErrorHandler(resp *http.Response, err error, _ int) (*http.Response, error) {
-	return resp, err
+	if resp == nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 // Request embeds *http.Request and adds useful metadata
@@ -82,6 +86,8 @@ type Request struct {
 
 	Client BaseClient
 	Pager  odata.CustomPager
+
+	CustomErrorParser ResponseErrorParser
 
 	// Embed *http.Request so that we can send this to an *http.Client
 	*http.Request
@@ -167,20 +173,31 @@ func (r *Response) Unmarshal(model interface{}) error {
 	if model == nil {
 		return fmt.Errorf("model was nil")
 	}
+	if r.Response == nil {
+		return fmt.Errorf("could not unmarshal as the HTTP response was nil")
+	}
 
-	contentType := strings.ToLower(r.Header.Get("Content-Type"))
-	if contentType == "" {
-		// some APIs (e.g. Storage Data Plane) don't return a content type... so we'll assume from the Accept header
-		acc, err := accept.FromString(r.Request.Header.Get("Accept"))
-		if err != nil {
-			if preferred := acc.FirstChoice(); preferred != nil {
-				contentType = preferred.ContentType
+	var contentType string
+	if r.Response.Header != nil {
+		contentType = strings.ToLower(r.Response.Header.Get("Content-Type"))
+
+		if contentType == "" {
+			// some APIs (e.g. Storage Data Plane) don't return a content type... so we'll assume from the Accept header
+			acc, err := accept.FromString(r.Request.Header.Get("Accept"))
+			if err != nil {
+				if preferred := acc.FirstChoice(); preferred != nil {
+					contentType = preferred.ContentType
+				}
+			}
+			if contentType == "" {
+				// fall back on request media type
+				contentType = strings.ToLower(r.Request.Header.Get("Content-Type"))
 			}
 		}
-		if contentType == "" {
-			// fall back on request media type
-			contentType = strings.ToLower(r.Request.Header.Get("Content-Type"))
-		}
+	}
+
+	if contentType == "" {
+		return fmt.Errorf("could not determine Content-Type for response")
 	}
 
 	// Some APIs (e.g. Maintenance) return 200 without a body, don't unmarshal these
@@ -425,7 +442,7 @@ func (c *Client) Execute(ctx context.Context, req *Request) (*Response, error) {
 	}
 
 	// Instantiate a RetryableHttp client and configure its CheckRetry func
-	r := c.retryableClient(func(ctx context.Context, r *http.Response, err error) (bool, error) {
+	r := c.retryableClient(ctx, func(ctx context.Context, r *http.Response, err error) (bool, error) {
 		// First check for badly malformed responses
 		if r == nil {
 			if req.IsIdempotent() {
@@ -502,33 +519,55 @@ func (c *Client) Execute(ctx context.Context, req *Request) (*Response, error) {
 
 	// Determine whether response status is valid
 	if !containsStatusCode(req.ValidStatusCodes, resp.StatusCode) {
-		// The status code didn't match, but we also need to check the ValidStatusFUnc, if provided
+		// The status code didn't match, but we also need to check the ValidStatusFunc, if provided
 		// Note that the odata argument here is a best-effort and may be nil
 		if f := req.ValidStatusFunc; f != nil && f(resp.Response, resp.OData) {
 			return resp, nil
 		}
 
-		// Determine suitable error text
-		var errText string
-		switch {
-		case resp.OData != nil && resp.OData.Error != nil && resp.OData.Error.String() != "":
-			errText = fmt.Sprintf("error: %s", resp.OData.Error)
+		status := fmt.Sprintf("%d", resp.StatusCode)
 
-		default:
-			defer resp.Body.Close()
-
-			respBody, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return resp, fmt.Errorf("unexpected status %d, could not read response body", resp.StatusCode)
-			}
-			if len(respBody) == 0 {
-				return resp, fmt.Errorf("unexpected status %d received with no body", resp.StatusCode)
-			}
-
-			errText = fmt.Sprintf("response: %s", respBody)
+		// Prefer the status text returned in the response, but fall back to predefined status if absent
+		statusText := resp.Status
+		if statusText == "" {
+			statusText = http.StatusText(resp.StatusCode)
+		}
+		if statusText != "" {
+			status = fmt.Sprintf("%s (%s)", status, statusText)
 		}
 
-		return resp, fmt.Errorf("unexpected status %d with %s", resp.StatusCode, errText)
+		// Determine suitable error text
+		var errText string
+
+		// Use a custom response error handler if provided
+		if req.CustomErrorParser != nil {
+			if err = req.CustomErrorParser.FromResponse(resp.Response); err != nil {
+				errText = err.Error()
+			}
+		}
+
+		// Fall back to parsing error text from OData
+		if errText == "" {
+			switch {
+			case resp.OData != nil && resp.OData.Error != nil && resp.OData.Error.String() != "":
+				errText = fmt.Sprintf("error: %s", resp.OData.Error)
+
+			default:
+				defer resp.Body.Close()
+
+				respBody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return resp, fmt.Errorf("unexpected status %s, could not read response body", status)
+				}
+				if len(respBody) == 0 {
+					return resp, fmt.Errorf("unexpected status %s received with no body", status)
+				}
+
+				errText = fmt.Sprintf("response: %s", respBody)
+			}
+		}
+
+		return resp, fmt.Errorf("unexpected status %s with %s", status, errText)
 	}
 
 	return resp, nil
@@ -625,7 +664,7 @@ func (c *Client) ExecutePaged(ctx context.Context, req *Request) (*Response, err
 }
 
 // retryableClient instantiates a new *retryablehttp.Client having the provided checkRetry func
-func (c *Client) retryableClient(checkRetry retryablehttp.CheckRetry) (r *retryablehttp.Client) {
+func (c *Client) retryableClient(ctx context.Context, checkRetry retryablehttp.CheckRetry) (r *retryablehttp.Client) {
 	r = retryablehttp.NewClient()
 
 	r.Backoff = func(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
@@ -650,6 +689,32 @@ func (c *Client) retryableClient(checkRetry retryablehttp.CheckRetry) (r *retrya
 	r.CheckRetry = checkRetry
 	r.ErrorHandler = RetryableErrorHandler
 	r.Logger = log.Default()
+	r.RetryWaitMin = 1 * time.Second
+	r.RetryWaitMax = 61 * time.Second
+
+	// The default backoff results into the following formula T(n):
+	// ("t" repr. total time in sec, "n" repr. total retry count):
+	// - t = 2**(n+1) - 1 				(0<=n<6)
+	// - t = (1+2+4+8+16+32) + 61*(n-6) (n>6)
+	// This results into the following N(t) (by guaranteeing T(n) <= t):
+	// - n = floor(log(t+1)) - 1 		(0<=t<=63)
+	// - n = (t - 63)/61 + 6 			(t > 63)
+	var safeRetryNumber = func(t time.Duration) int {
+		sec := t.Seconds()
+		if sec <= 63 {
+			return int(math.Floor(math.Log2(sec+1))) - 1
+		}
+		return (int(sec)-63)/61 + 6
+	}
+
+	// Default RetryMax of 16 takes approx 10 minutes to iterate
+	r.RetryMax = 16
+
+	// In case the context has deadline defined, adjust the retry count to a value
+	// that the total time spent for retrying is right before the deadline exceeded.
+	if deadline, ok := ctx.Deadline(); ok {
+		r.RetryMax = safeRetryNumber(deadline.Sub(time.Now()))
+	}
 
 	tlsConfig := tls.Config{
 		MinVersion: tls.VersionTLS12,

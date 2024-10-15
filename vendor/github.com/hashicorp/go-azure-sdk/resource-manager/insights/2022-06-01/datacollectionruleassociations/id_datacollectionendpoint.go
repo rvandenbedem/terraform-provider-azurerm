@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&DataCollectionEndpointId{})
+}
 
 var _ resourceids.ResourceId = &DataCollectionEndpointId{}
 
@@ -37,7 +42,7 @@ func ParseDataCollectionEndpointID(input string) (*DataCollectionEndpointId, err
 	}
 
 	id := DataCollectionEndpointId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +59,7 @@ func ParseDataCollectionEndpointIDInsensitively(input string) (*DataCollectionEn
 	}
 
 	id := DataCollectionEndpointId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -110,7 +115,7 @@ func (id DataCollectionEndpointId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftInsights", "Microsoft.Insights", "Microsoft.Insights"),
 		resourceids.StaticSegment("staticDataCollectionEndpoints", "dataCollectionEndpoints", "dataCollectionEndpoints"),
-		resourceids.UserSpecifiedSegment("dataCollectionEndpointName", "dataCollectionEndpointValue"),
+		resourceids.UserSpecifiedSegment("dataCollectionEndpointName", "dataCollectionEndpointName"),
 	}
 }
 

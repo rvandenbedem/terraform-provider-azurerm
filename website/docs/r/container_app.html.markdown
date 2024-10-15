@@ -41,7 +41,7 @@ resource "azurerm_container_app" "example" {
   template {
     container {
       name   = "examplecontainerapp"
-      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      image  = "mcr.microsoft.com/k8se/quickstart:latest"
       cpu    = 0.25
       memory = "0.5Gi"
     }
@@ -85,11 +85,19 @@ The following arguments are supported:
 
 A `secret` block supports the following:
 
-* `name` - (Required) The Secret name.
+* `name` - (Required) The secret name.
 
-* `value` - (Required) The value for this secret.
+* `identity` - (Optional) The identity to use for accessing the Key Vault secret reference. This can either be the Resource ID of a User Assigned Identity, or `System` for the System Assigned Identity.
 
-!> **Note:** Secrets cannot be removed from the service once added, attempting to do so will result in an error. Their values may be zeroed, i.e. set to `""`, but the named secret must persist. This is due to a technical limitation on the service which causes the service to become unmanageable. See [this issue](https://github.com/microsoft/azure-container-apps/issues/395) for more details.
+!> **Note:** `identity` must be used together with `key_vault_secret_id`
+
+* `key_vault_secret_id` - (Optional) The ID of a Key Vault secret. This can be a versioned or version-less ID.
+
+!> **Note:** When using `key_vault_secret_id`, `ignore_changes` should be used to ignore any changes to `value`.
+
+* `value` - (Optional) The value for this secret.
+
+!> **Note:** `value` will be ignored if `key_vault_secret_id` and `identity` are provided.
 
 ---
 
@@ -219,7 +227,7 @@ A `container` block supports the following:
 
 * `env` - (Optional) One or more `env` blocks as detailed below.
 
-* `ephemeral_storage` - The amount of ephemeral storage available to the Container App. 
+* `ephemeral_storage` - The amount of ephemeral storage available to the Container App.
 
 ~> **NOTE:** `ephemeral_storage` is currently in preview and not configurable at this time.
 
@@ -365,8 +373,6 @@ An `ingress` block supports the following:
 
 * `allow_insecure_connections` - (Optional) Should this ingress allow insecure connections?
 
-* `custom_domain` - (Optional) One or more `custom_domain` block as detailed below.
-
 * `fqdn` - The FQDN of the ingress.
 
 * `external_enabled` - (Optional) Are connections to this Ingress from outside the Container App Environment enabled? Defaults to `false`.
@@ -374,7 +380,7 @@ An `ingress` block supports the following:
 * `ip_security_restriction` - (Optional) One or more `ip_security_restriction` blocks for IP-filtering rules as defined below.
 
 * `target_port` - (Required) The target port on the container for the Ingress traffic.
- 
+
 * `exposed_port` - (Optional) The exposed port on the container for the Ingress traffic.
 
 ~> **Note:** `exposed_port` can only be specified when `transport` is set to `tcp`.
@@ -383,15 +389,7 @@ An `ingress` block supports the following:
 
 * `transport` - (Optional) The transport method for the Ingress. Possible values are `auto`, `http`, `http2` and `tcp`. Defaults to `auto`.
 
----
-
-A `custom_domain` block supports the following:
-
-* `certificate_binding_type` - (Optional) The Binding type. Possible values include `Disabled` and `SniEnabled`. Defaults to `Disabled`.
-
-* `certificate_id` - (Required) The ID of the Container App Environment Certificate.
-
-* `name` - (Required) The hostname of the Certificate. Must be the CN or a named SAN in the certificate.
+~> **Note:**  if `transport` is set to `tcp`, `exposed_port` and `target_port` should be set at the same time.
 
 ---
 
@@ -403,7 +401,7 @@ A `ip_security_restriction` block supports the following:
 
 * `description` - (Optional) Describe the IP restriction rule that is being sent to the container-app.
 
-* `ip_address_range` - (Required) CIDR notation to match incoming IP address.
+* `ip_address_range` - (Required) The incoming IP address or range of IP addresses (in CIDR notation).
 
 * `name` - (Required) Name for the IP restriction rule.
 
@@ -419,11 +417,11 @@ A `traffic_weight` block supports the following:
 
 * `revision_suffix` - (Optional) The suffix string to which this `traffic_weight` applies.
 
-~> **Note:** `latest_revision` conflicts with `revision_suffix`, which means you shall either set `latest_revision` to `true` or specify `revision_suffix`. Especially for creation, there shall only be one `traffic_weight`, with the `latest_revision` set to `true`, and leave the `revision_suffix` empty.
+~> **Note:** If `latest_revision` is `false`, the `revision_suffix` shall be specified.
 
 * `percentage` - (Required) The percentage of traffic which should be sent this revision.
 
-~> **Note:** The cumulative values for `weight` must equal 100 exactly and explicitly, no default weights are assumed. 
+~> **Note:** The cumulative values for `weight` must equal 100 exactly and explicitly, no default weights are assumed.
 
 ---
 
@@ -445,11 +443,11 @@ The authentication details must also be supplied, `identity` and `username`/`pas
 
 * `identity` - (Optional) Resource ID for the User Assigned Managed identity to use when pulling from the Container Registry.
 
+~> **Note:** The Resource ID must be of a User Assigned Managed identity defined in an `identity` block.
+
 * `password_secret_name` - (Optional) The name of the Secret Reference containing the password value for this user on the Container Registry, `username` must also be supplied.
 
 * `username` - (Optional) The username to use for this Container Registry, `password_secret_name` must also be supplied..
-
-
 
 ## Attributes Reference
 
@@ -459,6 +457,8 @@ In addition to the Arguments listed above - the following Attributes are exporte
 
 * `custom_domain_verification_id` - The ID of the Custom Domain Verification for this Container App.
 
+* `ingress` - An `ingress` block as detailed below.
+
 * `latest_revision_fqdn` - The FQDN of the Latest Revision of the Container App.
 
 * `latest_revision_name` - The name of the latest Container Revision.
@@ -467,6 +467,21 @@ In addition to the Arguments listed above - the following Attributes are exporte
 
 * `outbound_ip_addresses` - A list of the Public IP Addresses which the Container App uses for outbound network access.
 
+---
+
+An `ingress` block exports the following:
+
+* `custom_domain` - One or more `custom_domain` block as detailed below.
+
+---
+
+A `custom_domain` block exports the following:
+
+* `certificate_binding_type` - The Binding type.
+
+* `certificate_id` - The ID of the Container App Environment Certificate.
+
+* `name` - The hostname of the Certificate.
 
 ## Timeouts
 

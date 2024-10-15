@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&WebPubSubId{})
+}
 
 var _ resourceids.ResourceId = &WebPubSubId{}
 
@@ -37,7 +42,7 @@ func ParseWebPubSubID(input string) (*WebPubSubId, error) {
 	}
 
 	id := WebPubSubId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +59,7 @@ func ParseWebPubSubIDInsensitively(input string) (*WebPubSubId, error) {
 	}
 
 	id := WebPubSubId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -110,7 +115,7 @@ func (id WebPubSubId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftSignalRService", "Microsoft.SignalRService", "Microsoft.SignalRService"),
 		resourceids.StaticSegment("staticWebPubSub", "webPubSub", "webPubSub"),
-		resourceids.UserSpecifiedSegment("webPubSubName", "webPubSubValue"),
+		resourceids.UserSpecifiedSegment("webPubSubName", "webPubSubName"),
 	}
 }
 

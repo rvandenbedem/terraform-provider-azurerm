@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&KeyKindId{})
+}
 
 var _ resourceids.ResourceId = &KeyKindId{}
 
@@ -39,7 +44,7 @@ func ParseKeyKindID(input string) (*KeyKindId, error) {
 	}
 
 	id := KeyKindId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -56,7 +61,7 @@ func ParseKeyKindIDInsensitively(input string) (*KeyKindId, error) {
 	}
 
 	id := KeyKindId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -124,7 +129,7 @@ func (id KeyKindId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftSearch", "Microsoft.Search", "Microsoft.Search"),
 		resourceids.StaticSegment("staticSearchServices", "searchServices", "searchServices"),
-		resourceids.UserSpecifiedSegment("searchServiceName", "searchServiceValue"),
+		resourceids.UserSpecifiedSegment("searchServiceName", "searchServiceName"),
 		resourceids.StaticSegment("staticRegenerateAdminKey", "regenerateAdminKey", "regenerateAdminKey"),
 		resourceids.ConstantSegment("keyKind", PossibleValuesForAdminKeyKind(), "primary"),
 	}

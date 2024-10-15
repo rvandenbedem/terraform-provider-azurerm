@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/recaser"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 )
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See NOTICE.txt in the project root for license information.
+
+func init() {
+	recaser.RegisterResourceId(&ObjectReplicationPolicyId{})
+}
 
 var _ resourceids.ResourceId = &ObjectReplicationPolicyId{}
 
@@ -39,7 +44,7 @@ func ParseObjectReplicationPolicyID(input string) (*ObjectReplicationPolicyId, e
 	}
 
 	id := ObjectReplicationPolicyId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -56,7 +61,7 @@ func ParseObjectReplicationPolicyIDInsensitively(input string) (*ObjectReplicati
 	}
 
 	id := ObjectReplicationPolicyId{}
-	if err := id.FromParseResult(*parsed); err != nil {
+	if err = id.FromParseResult(*parsed); err != nil {
 		return nil, err
 	}
 
@@ -116,9 +121,9 @@ func (id ObjectReplicationPolicyId) Segments() []resourceids.Segment {
 		resourceids.StaticSegment("staticProviders", "providers", "providers"),
 		resourceids.ResourceProviderSegment("staticMicrosoftStorage", "Microsoft.Storage", "Microsoft.Storage"),
 		resourceids.StaticSegment("staticStorageAccounts", "storageAccounts", "storageAccounts"),
-		resourceids.UserSpecifiedSegment("storageAccountName", "storageAccountValue"),
+		resourceids.UserSpecifiedSegment("storageAccountName", "storageAccountName"),
 		resourceids.StaticSegment("staticObjectReplicationPolicies", "objectReplicationPolicies", "objectReplicationPolicies"),
-		resourceids.UserSpecifiedSegment("objectReplicationPolicyId", "objectReplicationPolicyIdValue"),
+		resourceids.UserSpecifiedSegment("objectReplicationPolicyId", "objectReplicationPolicyId"),
 	}
 }
 

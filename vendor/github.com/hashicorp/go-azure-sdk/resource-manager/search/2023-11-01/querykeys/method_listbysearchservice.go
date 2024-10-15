@@ -41,6 +41,7 @@ func (o ListBySearchServiceOperationOptions) ToHeaders() *client.Headers {
 
 func (o ListBySearchServiceOperationOptions) ToOData() *odata.Query {
 	out := odata.Query{}
+
 	return &out
 }
 
@@ -48,6 +49,18 @@ func (o ListBySearchServiceOperationOptions) ToQuery() *client.QueryParams {
 	out := client.QueryParams{}
 
 	return &out
+}
+
+type ListBySearchServiceCustomPager struct {
+	NextLink *odata.Link `json:"nextLink"`
+}
+
+func (p *ListBySearchServiceCustomPager) NextPageLink() *odata.Link {
+	defer func() {
+		p.NextLink = nil
+	}()
+
+	return p.NextLink
 }
 
 // ListBySearchService ...
@@ -58,8 +71,9 @@ func (c QueryKeysClient) ListBySearchService(ctx context.Context, id SearchServi
 			http.StatusOK,
 		},
 		HttpMethod:    http.MethodPost,
-		Path:          fmt.Sprintf("%s/listQueryKeys", id.ID()),
 		OptionsObject: options,
+		Pager:         &ListBySearchServiceCustomPager{},
+		Path:          fmt.Sprintf("%s/listQueryKeys", id.ID()),
 	}
 
 	req, err := c.Client.NewRequest(ctx, opts)
@@ -100,6 +114,7 @@ func (c QueryKeysClient) ListBySearchServiceCompleteMatchingPredicate(ctx contex
 
 	resp, err := c.ListBySearchService(ctx, id, options)
 	if err != nil {
+		result.LatestHttpResponse = resp.HttpResponse
 		err = fmt.Errorf("loading results: %+v", err)
 		return
 	}
